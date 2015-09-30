@@ -8,10 +8,11 @@
  * Controller of the frameworkApp
  */
 angular.module('frameworkApp')
-  .controller('AboutCtrl', function () {
+  .controller('AboutCtrl', function ($stateHandle) {
     this.awesomeThings = [
       'HTML5 Boilerplate',
       'AngularJS',
       'Karma'
     ];
-  });
+
+});

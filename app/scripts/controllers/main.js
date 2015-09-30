@@ -15,5 +15,5 @@ angular.module('frameworkApp')
       'Karma'
     ];
 
-    $scope.disableroute = $stateHandle.disableRoute
+    $scope.disableroute = $stateHandle.disableRoute;
   });

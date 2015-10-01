@@ -47,7 +47,7 @@
       }
     ]);
 
-    // Provider to handle state based routing
+    // Provider to handle view and path state based on routing
     app.provider('$stateHandle',["$provide", "$factoriesForStateHandleProvider",
       function($provide, $factoriesForStateHandleProvider){
         var $browser = undefined,

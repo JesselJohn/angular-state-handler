@@ -14,6 +14,15 @@ angular.module('frameworkApp')
       'AngularJS',
       'Karma'
     ];
+    $scope.val = {
+    	prm:0
+    };
 
-    $scope.disableroute = $stateHandle.disableRoute;
+    $stateHandle.subscribe('main',"/c/:prms").response(function(params){
+    	$scope.val.prm = params.prms;
+	  });
+
+	  $scope.close = function(){
+	  	$stateHandle.resetRoute();
+	  };
   });

@@ -28,7 +28,8 @@ angular
       .when('/about', {
         templateUrl: 'views/about.html',
         controller: 'AboutCtrl',
-        controllerAs: 'about'
+        controllerAs: 'about',
+        authentication: true
       })
       .when('/contact', {
         templateUrl: 'views/about.html',
@@ -39,11 +40,14 @@ angular
         resolve:{
           message:function(){
           }
-        }
+        },
+        authentication: true
+      })
+      .noAuth('/signin',{
+        templateUrl: 'views/main.html',
+        controller: 'MainCtrl'
       })
       .otherwise({
         redirectTo: '/'
       });
-
-    $locationProvider.html5Mode(true);
   });

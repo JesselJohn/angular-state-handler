@@ -23,6 +23,10 @@ angular.module('frameworkApp')
   	$scope.val.prm = "about";
   });
 
+  $stateHandle.subscribe('about',"/contact").response(function(params){
+    $stateHandle.setUserAuth(true);
+  });
+
   var cRoute = $stateHandle.subscribe('about',"/c/:prms");
 
   cRoute.response(function(params){

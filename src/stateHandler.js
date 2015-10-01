@@ -3,6 +3,7 @@
 !function(){
     var app = angular.module( "stateHandler", [ "ngRoute" ] );
 
+    // Factories required to configure this module
     app.provider('$factoriesForStateHandle',["$provide",
       function($provide){
         var obj = {
@@ -46,10 +47,13 @@
       }
     ]);
 
+    // Provider to handle state based routing
     app.provider('$stateHandle',["$provide", "$factoriesForStateHandleProvider",
-      function($provide, $fFSHP){
+      function($provide, $factoriesForStateHandleProvider){
         var $browser = undefined,
           identityHash = {},
+          userAuthenticated = false,
+          authParams = {path:undefined,route:null},
           _constructor = function(subscriber,pathExpr){
             this.subscriber = subscriber;
             this.pathExpr = pathExpr;
@@ -66,14 +70,29 @@
             },
             getSubscribers:function(pathExpr){
               return identityHash[pathExpr];
+            },
+            setUserAuth:function(bool){
+              userAuthenticated = true;
+              return this;
+            },
+            getUserAuth:function(){
+              return userAuthenticated;
+            },
+            setAuthParams:function(path, route){
+              authParams.path = path;
+              authParams.route = route;
+              return this;
+            },
+            getAuthParams:function(){
+              return authParams;
             }
           };
 
         _constructor.prototype = {
           response:function(callback){
             this.callBacks.push(callback);
-            if(this.pathExpr == $fFSHP.$route.current.originalPath){
-              callback($fFSHP.$route.current.params);
+            if(this.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath){
+              callback($factoriesForStateHandleProvider.$route.current.params);
             }
           }
         };
@@ -86,8 +105,8 @@
       }
     ]);
 
-    app.config([ "$provide", "$routeProvider", "$httpProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
-      function($provide, $routeProvider, $httpProvider, $stateHandleProvider, $fFSHP) {
+    app.config([ "$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
+      function($provide, $routeProvider, $httpProvider, $locationProvider, $stateHandleProvider, $factoriesForStateHandleProvider) {
         var $stateHandle = $stateHandleProvider.$get(),
           previousUrl = undefined,
           randomTemplateUrl = "###" + (Math.random()*10/10) + "###",
@@ -112,7 +131,7 @@
               }
               if(!('controller' in route || 'controllerSetting' in route)){
                 route.controllerSetting = function($stateHandle){
-                  return $stateHandle.route.current.$$route.controller;
+                  return $stateHandle.route.current.controller;
                 };
               }
             }
@@ -122,18 +141,20 @@
         };
 
         function removeFunction( path ) {
+          var $routeRef = $routeProvider.$get();
           path = path.replace( /\/$/i, "" );
-          delete( $fFSHP.$route.routes[ path ] );
-          delete( $fFSHP.$route.routes[ path + "/" ] );
+          delete( $routeRef.routes[ path ] );
+          delete( $routeRef.routes[ path + "/" ] );
           return( this );
         };
 
         function removeCurrentFunction(){
-          return( this.remove( $fFSHP.$route.current.originalPath ) );
+          var $routeRef = $routeProvider.$get();
+          return( this.remove( $routeRef.current.originalPath ) );
         };
 
         function reloadRoute(){
-          $fFSHP.$route.reload();
+          $factoriesForStateHandleProvider.$route.reload();
         };
 
         $stateHandle.remove = $stateHandleProvider.remove = removeFunction;
@@ -141,16 +162,36 @@
         $stateHandle.when = $stateHandleProvider.when = whenFunction;
         $stateHandle.otherwise = $stateHandleProvider.otherwise = otherwiseFunction;
         $stateHandle.reloadRoute = $stateHandleProvider.reloadRoute = reloadRoute;
+        $stateHandle.noAuth = $stateHandleProvider.noAuth = function(path, route){
+          var that = this,
+            authParamsPathRef = $stateHandle.getAuthParams().path;
+          if(authParamsPathRef !== undefined){
+            $stateHandleProvider.remove(authParamsPathRef);
+          }
+          $stateHandle.setAuthParams(path, route);
+
+          if('authentication' in route){
+            delete route['authentication'];
+          }
+
+          $stateHandleProvider.when(path, route);
+          return that;
+        };
         $stateHandle.resetRoute = function(callback){
-          $fFSHP.$location.path(previousUrl);
+          $factoriesForStateHandleProvider.$location.path(previousUrl);
         };
 
         $httpProvider.interceptors.push(function ($q, $location, $timeout) {
           var cache = {};
             return {
                 'request': function (config) {
-                  var currentRouteRef = $fFSHP.$route.current,
+                  var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
                     subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath);
+
+                  if(currentRouteRef.authentication && !$stateHandle.getUserAuth()){
+                    $location.path($stateHandle.getAuthParams().path);
+                    return config.url===randomTemplateUrl?cache:config;
+                  }
                   $timeout(function(){
                     for(var a in subscribers){
                       var subscriberCallbacks = subscribers[a].callBacks;
@@ -163,12 +204,14 @@
                     return cache;
                   }
                   cache = config;
-                  $stateHandle.route = angular.copy($fFSHP.$route);
+                  $stateHandle.route = angular.copy($factoriesForStateHandleProvider.$route);
                   previousUrl = $location.path();
                   return config || $q.when(config);
                 }
             }
         });
+
+        $locationProvider.html5Mode(true);
       }
     ]);
 }();

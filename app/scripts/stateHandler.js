@@ -52,6 +52,8 @@
       function($provide, $factoriesForStateHandleProvider){
         var $browser = undefined,
           identityHash = {},
+          userAuthenticated = false,
+          authParams = {path:undefined,route:null},
           _constructor = function(subscriber,pathExpr){
             this.subscriber = subscriber;
             this.pathExpr = pathExpr;
@@ -68,6 +70,21 @@
             },
             getSubscribers:function(pathExpr){
               return identityHash[pathExpr];
+            },
+            setUserAuth:function(bool){
+              userAuthenticated = true;
+              return this;
+            },
+            getUserAuth:function(){
+              return userAuthenticated;
+            },
+            setAuthParams:function(path, route){
+              authParams.path = path;
+              authParams.route = route;
+              return this;
+            },
+            getAuthParams:function(){
+              return authParams;
             }
           };
 
@@ -88,8 +105,8 @@
       }
     ]);
 
-    app.config([ "$provide", "$routeProvider", "$httpProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
-      function($provide, $routeProvider, $httpProvider, $stateHandleProvider, $factoriesForStateHandleProvider) {
+    app.config([ "$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
+      function($provide, $routeProvider, $httpProvider, $locationProvider, $stateHandleProvider, $factoriesForStateHandleProvider) {
         var $stateHandle = $stateHandleProvider.$get(),
           previousUrl = undefined,
           randomTemplateUrl = "###" + (Math.random()*10/10) + "###",
@@ -124,14 +141,16 @@
         };
 
         function removeFunction( path ) {
+          var $routeRef = $routeProvider.$get();
           path = path.replace( /\/$/i, "" );
-          delete( $factoriesForStateHandleProvider.$route.routes[ path ] );
-          delete( $factoriesForStateHandleProvider.$route.routes[ path + "/" ] );
+          delete( $routeRef.routes[ path ] );
+          delete( $routeRef.routes[ path + "/" ] );
           return( this );
         };
 
         function removeCurrentFunction(){
-          return( this.remove( $factoriesForStateHandleProvider.$route.current.originalPath ) );
+          var $routeRef = $routeProvider.$get();
+          return( this.remove( $routeRef.current.originalPath ) );
         };
 
         function reloadRoute(){
@@ -143,6 +162,21 @@
         $stateHandle.when = $stateHandleProvider.when = whenFunction;
         $stateHandle.otherwise = $stateHandleProvider.otherwise = otherwiseFunction;
         $stateHandle.reloadRoute = $stateHandleProvider.reloadRoute = reloadRoute;
+        $stateHandle.noAuth = $stateHandleProvider.noAuth = function(path, route){
+          var that = this,
+            authParamsPathRef = $stateHandle.getAuthParams().path;
+          if(authParamsPathRef !== undefined){
+            $stateHandleProvider.remove(authParamsPathRef);
+          }
+          $stateHandle.setAuthParams(path, route);
+
+          if('authentication' in route){
+            delete route['authentication'];
+          }
+
+          $stateHandleProvider.when(path, route);
+          return that;
+        };
         $stateHandle.resetRoute = function(callback){
           $factoriesForStateHandleProvider.$location.path(previousUrl);
         };
@@ -153,6 +187,11 @@
                 'request': function (config) {
                   var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
                     subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath);
+
+                  if(currentRouteRef.authentication && !$stateHandle.getUserAuth()){
+                    $location.path($stateHandle.getAuthParams().path);
+                    return config.url===randomTemplateUrl?cache:config;
+                  }
                   $timeout(function(){
                     for(var a in subscribers){
                       var subscriberCallbacks = subscribers[a].callBacks;
@@ -171,6 +210,8 @@
                 }
             }
         });
+
+        $locationProvider.html5Mode(true);
       }
     ]);
 }();

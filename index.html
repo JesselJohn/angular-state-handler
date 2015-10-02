@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Angular State Handler by JesselJohn</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>Angular State Handler</h1>
+        <p>Control view with routes and with extra functionalities for easy route management.</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/JesselJohn/angular-state-handler" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/JesselJohn/angular-state-handler/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/JesselJohn/angular-state-handler/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1>
+<a id="angular-state-handler" class="anchor" href="#angular-state-handler" aria-hidden="true"><span class="octicon octicon-link"></span></a>ANGULAR STATE HANDLER</h1>
+
+<p>Control view with routes and providing extra functionalities for easy route management.</p>
+
+<h2>
+<a id="initial-route-configuration" class="anchor" href="#initial-route-configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initial Route Configuration</h2>
+
+<pre><code>$stateHandleProvider
+  .when('/', {
+    templateUrl: 'views/main.html',
+    controller: 'MainCtrl',
+    controllerAs: 'main'
+  })
+  .when('/about', {
+    templateUrl: 'views/about.html',
+    controller: 'AboutCtrl',
+    controllerAs: 'about',
+    authentication: true
+  })
+  .when('/c/:prms',{
+    resolve:{
+      message:function(){
+      }
+    },
+    authentication: true
+  })
+  .otherwise({
+    redirectTo: '/'
+  });
+</code></pre>
+
+<p><strong>Looks similar to the normal route configuration nothing too different.</strong></p>
+
+<h2>
+<a id="assigning-routes-late" class="anchor" href="#assigning-routes-late" aria-hidden="true"><span class="octicon octicon-link"></span></a>Assigning Routes Late</h2>
+
+<p>Now you know, to set above configuration using pure angular code can only be done within "app.config()" . <strong>Angular State Handler</strong> allows to specify a route whenever you wish . For setting a route late you can use "$stateHandle" factory availabe . Below is how you can specify late routes using "$stateHandle":</p>
+
+<pre><code>$stateHandle
+  .when('/contact', {
+    templateUrl: 'views/main.html',
+    controller: 'AboutCtrl',
+    controllerAs: 'main'
+  });
+</code></pre>
+
+<p><strong>Looks nothing different from the configuration code just the difference is that we used "$stateHandleProvider" while configuration and "$stateHandle" for assigning late routes.</strong></p>
+
+<h2>
+<a id="view-handling" class="anchor" href="#view-handling" aria-hidden="true"><span class="octicon octicon-link"></span></a>View Handling</h2>
+
+<p><strong>Javascript Observer Pattern</strong> is used to handle view based on route changes(<em>To better understand about observer pattern you can visit <a href="http://bumbu.me/javascript-observer-publish-subscribe-pattern/">http://bumbu.me/javascript-observer-publish-subscribe-pattern/</a></em>). Whereever params of a specific route is required you can publish for that route which will respond with parameters .Below is the related code :</p>
+
+<pre><code>angular.module('frameworkApp')
+  .controller('MainCtrl', function ($scope, $stateHandle) {
+
+    // Here subscription is done to "/c/:prms"
+    $stateHandle.subscribe('main',"/c/:prms").response(function(params){
+      $scope.val.prm = params.prms;
+    });
+});
+</code></pre>
+
+<p><strong>.subscribe(</strong> <em>subscriber_name</em> <strong>,</strong> <em>path_or_expression</em> <strong>)</strong> <strong>:</strong>
+ It takes two parameters:</p>
+
+<p>1st parameter -&gt; Name of the subscriber used to uniquely identify a subscriber .Can be any string but it would be recommended to use name similar to the controller or directive or factory block in which its contained .</p>
+
+<p>2nd parameter -&gt; path/expression to which to subscribe.</p>
+
+<p><strong>.response(</strong> <em>callback_to_execute_on_publish</em> <strong>)</strong> <strong>:</strong>
+ The callback will be executed when the path is set in the browser to which subscription was done .</p>
+
+<blockquote>
+<p>Note:- State change of an existing view you can see if you do not specify a "template" or "templateUrl" property to a route and you have subscribed for that route for which in the response function you are changing the view by changing $scope properties or by any other way (<em>See the third "when" block in the route configuration where no "template" or "templateUrl" property is specified</em>).You can even see in that route, "controller" property is also not specified .For those cases the controller before route stays till a route change happens in which any other controller is specified .</p>
+</blockquote>
+      </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/JesselJohn">JesselJohn</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>

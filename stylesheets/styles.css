@@ -867,7 +867,7 @@ footer {
   header, section, footer {
     float: none;
   }
-  header h1, section h1, footer h1 {
+  section h1, footer h1 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

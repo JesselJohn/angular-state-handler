@@ -525,7 +525,7 @@ h1, h2, h3 {
 }
 
 h1 {
-  font-size: 28px;
+  font-size: 53px;
 }
 
 h2 {
@@ -789,6 +789,12 @@ header p {
   top: 7px;
   display: block;
   background: url(../images/octocat-logo.png);
+}
+
+#angular-img {
+  width:74px;
+  position:absolute;
+  top:24px;
 }
 
 section {

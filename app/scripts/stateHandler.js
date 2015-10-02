@@ -10,21 +10,21 @@
             $get:function(){}
           };
 
-        getFactoryReference("$route");
-        getFactoryReference("$timeout");
-        getFactoryReference("$location");
+        getFactoryReferenceFn("$route");
+        getFactoryReferenceFn("$timeout");
+        getFactoryReferenceFn("$location");
 
-        function getFactoryReference(factoryName){
-          $provide.decorator( factoryName, factoryDecorator );
+        function getFactoryReferenceFn(factoryName){
+          $provide.decorator( factoryName, factoryDecoratorFn );
 
-          function factoryDecorator( $delegate ) {
+          function factoryDecoratorFn( $delegate ) {
             return obj[factoryName] = $delegate;
           };
         }
 
-        $provide.decorator( "ngViewDirective", ngViewDirectiveDecorator );
+        $provide.decorator( "ngViewDirective", ngViewDirectiveDecoratorFn );
 
-        function ngViewDirectiveDecorator( $delegate, $route, $injector ) {
+        function ngViewDirectiveDecoratorFn( $delegate, $route, $injector ) {
           var ngViewRef = $delegate[$delegate.length - 1],
             compileRef = ngViewRef.compile || function () {},
             link = function () {
@@ -60,41 +60,57 @@
             this.callBacks = [];
           },
           obj = {
-            subscribe:function(subscriber,pathExpr){
-              if(!(pathExpr in identityHash)){
-                identityHash[pathExpr] = {};
-              }else if(subscriber in identityHash[pathExpr]){
-                identityHash[pathExpr][subscriber].callBacks.length = 0;
-              }
-              return identityHash[pathExpr][subscriber] || (identityHash[pathExpr][subscriber] = new _constructor(subscriber,pathExpr));
-            },
-            getSubscribers:function(pathExpr){
-              return identityHash[pathExpr];
-            },
-            setUserAuth:function(bool){
-              userAuthenticated = true;
-              return this;
-            },
-            getUserAuth:function(){
-              return userAuthenticated;
-            },
-            setAuthParams:function(path, route){
-              authParams.path = path;
-              authParams.route = route;
-              return this;
-            },
-            getAuthParams:function(){
-              return authParams;
-            }
+            subscribe:subscribeFn,
+            getSubscribers:getSubscribersFn,
+            setUserAuth:setUserAuthFn,
+            getUserAuth:getUserAuthFn,
+            setAuthParams:setAuthParamsFn,
+            getAuthParams:getAuthParamsFn
           };
 
-        _constructor.prototype = {
-          response:function(callback){
-            this.callBacks.push(callback);
-            if(this.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath){
-              callback($factoriesForStateHandleProvider.$route.current.params);
-            }
+        function subscribeFn(subscriber,pathExpr){
+          if(!(pathExpr in identityHash)){
+            identityHash[pathExpr] = {};
+          }else if(subscriber in identityHash[pathExpr]){
+            identityHash[pathExpr][subscriber].callBacks.length = 0;
           }
+          
+          return identityHash[pathExpr][subscriber] || (identityHash[pathExpr][subscriber] = new _constructor(subscriber,pathExpr));
+        };
+
+        function getSubscribersFn(pathExpr){
+          return identityHash[pathExpr];
+        };
+
+        function setUserAuthFn(bool){
+          userAuthenticated = true;
+          return this;
+        };
+
+        function getUserAuthFn(){
+          return userAuthenticated;
+        };
+
+        function setAuthParamsFn(path, route){
+          authParams.path = path;
+          authParams.route = route;
+          return this;
+        };
+
+        function getAuthParamsFn(){
+          return authParams;
+        };
+
+        function subscriberResponseFn(callback){
+          this.callBacks.push(callback);
+
+          if(this.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath){
+            callback($factoriesForStateHandleProvider.$route.current.params);
+          }
+        };
+
+        _constructor.prototype = {
+          response:subscriberResponseFn
         };
 
         return {
@@ -110,37 +126,33 @@
         var $stateHandle = $stateHandleProvider.$get(),
           previousUrl = undefined,
           randomTemplateUrl = "###" + (Math.random()*10/10) + "###",
-          whenFunction = cloneRouteProviderFunctions.call($stateHandleProvider,'when'),
-          otherwiseFunction = cloneRouteProviderFunctions.call($stateHandleProvider,'otherwise');
+          whenFn = cloneRouteProviderFn.call($stateHandleProvider,'when'),
+          otherwiseFn = cloneRouteProviderFn.call($stateHandleProvider,'otherwise');
 
-        function executeCallbacks(){
-          var that = this,
-            callbacksRef = that.callBacks;
-            for(var i=0,len = callbacksRef.length;i<len;i++){
-              callbacksRef[i]();
-            }
-        };
-
-        function cloneRouteProviderFunctions(prop){
+        function cloneRouteProviderFn(prop){
           var that = this,
               functionRef = $routeProvider[prop];
           return function(path, route) {
             if(route!==undefined){
+
               if(!('templateUrl' in route || 'template' in route)){
                 route.templateUrl = randomTemplateUrl;
               }
+
               if(!('controller' in route || 'controllerSetting' in route)){
                 route.controllerSetting = function($stateHandle){
                   return $stateHandle.route.current.controller;
                 };
               }
+
             }
+
             functionRef.apply( $routeProvider, arguments );
             return( that );
           };
         };
 
-        function removeFunction( path ) {
+        function removeFn( path ) {
           var $routeRef = $routeProvider.$get();
           path = path.replace( /\/$/i, "" );
           delete( $routeRef.routes[ path ] );
@@ -148,26 +160,23 @@
           return( this );
         };
 
-        function removeCurrentFunction(){
+        function removeCurrentFn(){
           var $routeRef = $routeProvider.$get();
           return( this.remove( $routeRef.current.originalPath ) );
         };
 
-        function reloadRoute(){
+        function reloadRouteFn(){
           $factoriesForStateHandleProvider.$route.reload();
         };
 
-        $stateHandle.remove = $stateHandleProvider.remove = removeFunction;
-        $stateHandle.removeCurrent = $stateHandleProvider.removeCurrent = removeCurrentFunction;
-        $stateHandle.when = $stateHandleProvider.when = whenFunction;
-        $stateHandle.otherwise = $stateHandleProvider.otherwise = otherwiseFunction;
-        $stateHandle.reloadRoute = $stateHandleProvider.reloadRoute = reloadRoute;
-        $stateHandle.noAuth = $stateHandleProvider.noAuth = function(path, route){
+        function noAuthFn(path, route){
           var that = this,
             authParamsPathRef = $stateHandle.getAuthParams().path;
+
           if(authParamsPathRef !== undefined){
             $stateHandleProvider.remove(authParamsPathRef);
           }
+
           $stateHandle.setAuthParams(path, route);
 
           if('authentication' in route){
@@ -177,9 +186,18 @@
           $stateHandleProvider.when(path, route);
           return that;
         };
-        $stateHandle.resetRoute = function(callback){
+
+        function resetRouteFn(callback){
           $factoriesForStateHandleProvider.$location.path(previousUrl);
         };
+
+        $stateHandle.remove = $stateHandleProvider.remove = removeFn;
+        $stateHandle.removeCurrent = $stateHandleProvider.removeCurrent = removeCurrentFn;
+        $stateHandle.when = $stateHandleProvider.when = whenFn;
+        $stateHandle.otherwise = $stateHandleProvider.otherwise = otherwiseFn;
+        $stateHandle.reloadRoute = $stateHandleProvider.reloadRoute = reloadRouteFn;
+        $stateHandle.noAuth = $stateHandleProvider.noAuth = noAuthFn;
+        $stateHandle.resetRoute = resetRouteFn;
 
         $httpProvider.interceptors.push(function ($q, $location, $timeout) {
           var cache = {};
@@ -192,6 +210,7 @@
                     $location.path($stateHandle.getAuthParams().path);
                     return config.url===randomTemplateUrl?cache:config;
                   }
+
                   $timeout(function(){
                     for(var a in subscribers){
                       var subscriberCallbacks = subscribers[a].callBacks;
@@ -200,9 +219,11 @@
                       }
                     }
                   });
+
                   if(config.url===randomTemplateUrl){
                     return cache;
                   }
+
                   cache = config;
                   $stateHandle.route = angular.copy($factoriesForStateHandleProvider.$route);
                   previousUrl = $location.path();

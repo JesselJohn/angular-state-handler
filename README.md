@@ -2,6 +2,17 @@
 
 Control view with routes and providing extra functionalities for easy route management.
 
+## Installation
+
+Using bower :
+
+    #install package and add it to bower.json dependencies
+    $ bower install angular-state-handler --save
+
+
+    # install package and add it to bower.json devDependencies
+    $ bower install angular-state-handler --save-dev
+
 ## Initial Route Configuration
 
     $stateHandleProvider
@@ -68,18 +79,26 @@ Now you know, to set above configuration using pure angular code can only be don
     
 > Note:- State change of an existing view you can see if you do not specify a "template" or "templateUrl" property to a route and you have subscribed for that route for which in the response function you are changing the view by changing $scope properties or by any other way (*See the third "when" block in the route configuration where no "template" or "templateUrl" property is specified*).You can even see in that route, "controller" property is also not specified .For those cases the controller before route stays till a route change happens in which any other controller is specified .
 
-----------
-----------
+## Licence
 
-> **Generated with Yeoman**
-> 
-> This project is generated with [yo angular generator](https://github.com/yeoman/generator-angular)
-> version 0.12.1.
->
-> **Build & development**
->
-> Run `grunt` for building and `grunt serve` for preview.
->
-> **Testing**
->
-> Running `grunt test` will run the unit tests with karma.
+The MIT License (MIT)
+
+Copyright (c) 2015 Zword
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

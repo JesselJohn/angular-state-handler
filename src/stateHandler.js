@@ -179,7 +179,7 @@
 
           $stateHandle.setAuthParams(path, route);
 
-          if('authentication' in route){
+          if(route!==undefined && 'authentication' in route){
             delete route['authentication'];
           }
 

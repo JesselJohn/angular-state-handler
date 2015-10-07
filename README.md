@@ -34,11 +34,23 @@ Using bower :
         },
         authentication: true
       })
+      .noAuth('/signin',{
+        controller:'SignInCtrl
+      })
       .otherwise({
         redirectTo: '/'
       });
       
 **Looks similar to the normal route configuration nothing too different.**
+
+#### Authentication
+
+There is an extra function "$stateHandleProvider.noAuth(*path*, *route_options*)" which adds a configuration to redirect the user to the path specified in function call, when the user is not authenticated .
+
+The default user authentication state is *false* .To handle authentication you can get the state and also change the state using :
+
+    $stateHandle.setUserAuth(boolean); // To set the state to true or false
+    $stateHandle.getUserAuth();        // To get the authentication state
 
 ## Assigning Routes Late
 

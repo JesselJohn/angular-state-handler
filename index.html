@@ -62,7 +62,6 @@
   #install package and add it to bower.json dependencies
   $ bower install angular-state-handler --save
 
-
   # install package and add it to bower.json devDependencies
   $ bower install angular-state-handler --save-dev
 </code></pre>
@@ -95,6 +94,16 @@
 </code></pre>
 
 <p><strong>Looks similar to the normal route configuration nothing too different.</strong></p>
+
+<h4>Authentication</h4>
+<p>There is an extra function "$stateHandleProvider.noAuth(path, route_options)" which adds a configuration to redirect the user to the path specified in function call, when the user is not authenticated .</p>
+
+<p>The default user authentication state is false .To handle authentication you can get the state and also change the state using :</p>
+
+<pre><code>
+    $stateHandle.setUserAuth(boolean); // To set the state to true or false
+    $stateHandle.getUserAuth();        // To get the authentication state
+</code></pre>
 
 <h2>
 <a id="assigning-routes-late" class="anchor" href="#assigning-routes-late" aria-hidden="true"><span class="octicon octicon-link"></span></a>Assigning Routes Late</h2>

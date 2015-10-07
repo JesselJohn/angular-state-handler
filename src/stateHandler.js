@@ -204,10 +204,11 @@
             return {
                 'request': function (config) {
                   var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
-                    subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath);
+                    subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath),
+                    authParamsRef = $stateHandle.getAuthParams();
 
-                  if(currentRouteRef.authentication && !$stateHandle.getUserAuth()){
-                    $location.path($stateHandle.getAuthParams().path);
+                  if(authParamsRef.path!==undefined && currentRouteRef.authentication && !$stateHandle.getUserAuth()){
+                    $location.path(authParamsRef.path);
                     return config.url===randomTemplateUrl?cache:config;
                   }
 

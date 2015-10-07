@@ -54,6 +54,20 @@
 <p>Control view with routes and providing extra functionalities for easy route management.</p>
 
 <h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>Using bower :</p>
+
+<pre><code>
+  #install package and add it to bower.json dependencies
+  $ bower install angular-state-handler --save
+
+
+  # install package and add it to bower.json devDependencies
+  $ bower install angular-state-handler --save-dev
+</code></pre>
+
+<h2>
 <a id="initial-route-configuration" class="anchor" href="#initial-route-configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initial Route Configuration</h2>
 
 <pre><code>$stateHandleProvider
@@ -125,6 +139,20 @@
 <blockquote>
 <p>Note:- State change of an existing view you can see if you do not specify a "template" or "templateUrl" property to a route and you have subscribed for that route for which in the response function you are changing the view by changing $scope properties or by any other way (<em>See the third "when" block in the route configuration where no "template" or "templateUrl" property is specified</em>).You can even see in that route, "controller" property is also not specified .For those cases the controller before route stays till a route change happens in which any other controller is specified .</p>
 </blockquote>
+
+<h2>
+<a id="licence" class="anchor" href="#licence" aria-hidden="true"><span class="octicon octicon-link"></span></a>Licence</h2>
+
+<p>The MIT License (MIT)</p>
+
+<p>Copyright (c) 2015 Zword</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
       </section>
       <footer>
         <p>Project maintained by <a href="https://github.com/JesselJohn">JesselJohn</a></p>

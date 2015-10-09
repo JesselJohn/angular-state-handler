@@ -434,7 +434,13 @@ if (typeof JSON.retrocycle !== 'function') {
                   configRef.url = routeHash[$location.$$state.path].templateUrl;
                   $stateHandle.pushStateOnStateChange($location.$$state.path);
                 } catch (err) {
-                  $location.path("/");
+                  // Handle cases when the user hits a URL which doesn't contain templateUrl
+                  for (var _a in routeHash) {
+                    if (routeHash[_a].templateUrl !== undefined) {
+                      configRef.url = routeHash[_a].templateUrl;
+                      break;
+                    }
+                  }
                 }
                 return configRef;
               }

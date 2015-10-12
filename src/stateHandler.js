@@ -168,6 +168,14 @@ if (typeof JSON.retrocycle !== 'function') {
     return $;
   };
 }
+/*
+    Angular State Handler
+    2015-10-12
+    Public Domain.
+    NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+    USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO
+    NOT CONTROL.
+*/
 
 ! function(window, angular, undefined) {
   // "use strict";

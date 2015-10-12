@@ -211,7 +211,7 @@ if (typeof JSON.retrocycle !== 'function') {
             compileRef = ngViewRef.compile || function() {},
             link = function() {
               var current = $route.current;
-              if (current.loadedTemplateUrl = randomTemplateUrl) {
+              if (current.loadedTemplateUrl === randomTemplateUrl) {
                 $stateHandle.pushStateOnStateChange($stateHandle.getPreviousUrl());
               }
 
@@ -301,10 +301,11 @@ if (typeof JSON.retrocycle !== 'function') {
       };
 
       function subscriberResponseFn(callback) {
-        this.callBacks.push(callback);
+        var that = this;
+        that.callBacks.push(callback);
 
         $factoriesForStateHandleProvider.$timeout(function() {
-          if (this.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
+          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
             callback($factoriesForStateHandleProvider.$route.current.params);
           }
         });

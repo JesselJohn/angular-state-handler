@@ -405,6 +405,9 @@ if (typeof JSON.retrocycle !== 'function') {
         var cache = null;
         return {
           'request': function(config) {
+            if (config.url.match(/\.(jpe?g|png|gif|bmp|html)$/gi)) {
+              return config || $q.when(config);
+            }
             var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
               subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath),
               authParamsRef = $stateHandle.getAuthParams();

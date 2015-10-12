@@ -173,7 +173,8 @@ if (typeof JSON.retrocycle !== 'function') {
   // "use strict";
   var app = angular.module("stateHandler", ["ngRoute"]),
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
-    routeHash = {};
+    routeHash = {},
+    routeTemplateUrlCollection = [];
 
   // Factories required to configure this module
   app.provider('$factoriesForStateHandle', ["$provide",
@@ -202,7 +203,6 @@ if (typeof JSON.retrocycle !== 'function') {
             compileRef = ngViewRef.compile || function() {},
             link = function() {
               var current = $route.current;
-
               if (current.loadedTemplateUrl = randomTemplateUrl) {
                 $stateHandle.pushStateOnStateChange($stateHandle.getPreviousUrl());
               }
@@ -329,6 +329,10 @@ if (typeof JSON.retrocycle !== 'function') {
           if (route !== undefined) {
             if (!('templateUrl' in route || 'template' in route)) {
               route.templateUrl = randomTemplateUrl;
+            } else if ('templateUrl' in route) {
+              if (routeTemplateUrlCollection.indexOf(route.templateUrl) === -1) {
+                routeTemplateUrlCollection.push(route.templateUrl);
+              }
             }
             if (!('controller' in route || 'controllerSetting' in route)) {
               route.controllerSetting = function($stateHandle) {
@@ -387,7 +391,16 @@ if (typeof JSON.retrocycle !== 'function') {
       };
 
       function resetRouteFn(callback) {
-        $factoriesForStateHandleProvider.$location.path(previousUrl);
+        var $locationRef = $factoriesForStateHandleProvider.$location;
+        $locationRef.path(previousUrl || ($locationRef.$$state && $locationRef.$$state.path ||
+          function() {
+            for (var _a in routeHash) {
+              if (routeHash[_a].templateUrl !== undefined) {
+                return routeHash[_a].templateUrl;
+              }
+            }
+          }()
+        ));
       };
 
       $stateHandle.remove = $stateHandleProvider.remove = removeFn;
@@ -401,11 +414,13 @@ if (typeof JSON.retrocycle !== 'function') {
         return previousUrl;
       };
 
+
+
       $httpProvider.interceptors.push(function($q, $location, $timeout) {
         var cache = null;
         return {
           'request': function(config) {
-            if (config.url.match(/\.(jpe?g|png|gif|bmp|html)$/gi)) {
+            if (config.url.match(/\.(jpe?g|png|gif|bmp|html)$/gi) && config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
               return config || $q.when(config);
             }
             var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
@@ -435,12 +450,11 @@ if (typeof JSON.retrocycle !== 'function') {
                 try {
                   // If path can be retrieved from history state
                   configRef.url = routeHash[$location.$$state.path].templateUrl;
-                  $stateHandle.pushStateOnStateChange($location.$$state.path);
                 } catch (err) {
                   // Handle cases when the user hits a URL which doesn't contain templateUrl
-                  for (var _a in routeHash) {
-                    if (routeHash[_a].templateUrl !== undefined) {
-                      configRef.url = routeHash[_a].templateUrl;
+                  for (var _a2 in routeHash) {
+                    if (routeHash[_a2].templateUrl !== undefined) {
+                      configRef.url = routeHash[_a2].templateUrl;
                       break;
                     }
                   }

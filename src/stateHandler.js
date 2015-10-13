@@ -329,24 +329,24 @@ if (typeof JSON.retrocycle !== 'function') {
       if (historyState && ('path' in historyState)) {
         if(routeHash[historyState.path] && (prop in routeHash[historyState.path])){
           return routeHash[historyState.path][prop];
-        }else{
-          var fallBackValue = undefined;
-          for(var _a3 in routeHash){
-            var regexp = new RegExp(routeHash[_a3].regexp),
-              currentRoute = routeHash[_a3];
-            if(prop in currentRoute){
-              if(regexp.test(historyState.path)){
-                return routeHash[_a3][prop];
-              }
-              if(fallBackValue===undefined){
-                fallBackValue = routeHash[_a3][prop];
-              }
-            }
-          }
-
-          return fallBackValue;
         }
       }
+      var fallBackValue = undefined;
+      for(var _a3 in routeHash){
+        var regexp = new RegExp(routeHash[_a3].regexp),
+          currentRoute = routeHash[_a3];
+        if(prop in currentRoute){
+          if(historyState && 'path' in historyState && regexp.test(historyState.path)){
+            if(prop in routeHash[_a3]){
+              return routeHash[_a3][prop];
+            }
+          }
+          if(fallBackValue===undefined){
+            fallBackValue = routeHash[_a3][prop];
+          }
+        }
+      }
+      return fallBackValue;
     };
     routeHash = $route.routes;
     routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;

@@ -323,6 +323,35 @@ if (typeof JSON.retrocycle !== 'function') {
     }
   ]);
 
+  app.run(['$route', '$location', function($route, $location){
+    function getPropertyValueFromHistoryStateFn(prop){
+      var historyState = $location.$$state;
+      if (historyState && ('path' in historyState)) {
+        if(routeHash[historyState.path] && (prop in routeHash[historyState.path])){
+          return routeHash[historyState.path][prop];
+        }else{
+          var fallBackValue = undefined;
+          for(var _a3 in routeHash){
+            var regexp = new RegExp(routeHash[_a3].regexp),
+              currentRoute = routeHash[_a3];
+            if(prop in currentRoute){
+              if(regexp.test(historyState.path)){
+                return routeHash[_a3][prop];
+              }
+              if(fallBackValue===undefined){
+                fallBackValue = routeHash[_a3][prop];
+              }
+            }
+          }
+
+          return fallBackValue;
+        }
+      }
+    };
+    routeHash = $route.routes;
+    routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
+  }]);
+
   app.config(["$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
     function($provide, $routeProvider, $httpProvider, $locationProvider, $stateHandleProvider, $factoriesForStateHandleProvider) {
       var $stateHandle = $stateHandleProvider.$get(),
@@ -348,15 +377,19 @@ if (typeof JSON.retrocycle !== 'function') {
                 if ($stateHandle.route !== undefined) {
                   return $stateHandle.route.controller;
                 } else if ($factoriesForStateHandleProvider.$location.$$state !== null) {
-                  return routeHash[$factoriesForStateHandleProvider.$location.$$state.path].controller;
+                  try{
+                    // Throws error if controller property not found
+                    return routeHash[$factoriesForStateHandleProvider.$location.$$state.path].controller;
+                  }catch(err){
+                    // If state path doesn't match paths in routeHash
+                    // Possible that the route specified is an expression
+                    // We can parse the routes and retrieve the controller property by matching paths with regex
+                    return routeHash.getPropertyValue('controller');
+                  }
                 }
                 return "";
               };
             }
-          }
-
-          if (routeHash[path] === undefined) {
-            routeHash[path] = JSON.decycle(route);
           }
 
           functionRef.apply($routeProvider, arguments);
@@ -423,8 +456,6 @@ if (typeof JSON.retrocycle !== 'function') {
         return previousUrl;
       };
 
-
-
       $httpProvider.interceptors.push(function($q, $location, $timeout) {
         var cache = null;
         return {
@@ -457,16 +488,13 @@ if (typeof JSON.retrocycle !== 'function') {
               } else {
                 var configRef = JSON.decycle(config);
                 try {
-                  // If path can be retrieved from history state
+                  // Throws error if templateUrl property not found
                   configRef.url = routeHash[$location.$$state.path].templateUrl;
                 } catch (err) {
-                  // Handle cases when the user hits a URL which doesn't contain templateUrl
-                  for (var _a2 in routeHash) {
-                    if (routeHash[_a2].templateUrl !== undefined) {
-                      configRef.url = routeHash[_a2].templateUrl;
-                      break;
-                    }
-                  }
+                  // If state path doesn't match paths in routeHash
+                  // Possible that the route specified is an expression
+                  // We can parse the routes and retrieve the controller property by matching paths with regex
+                  configRef.url = routeHash.getPropertyValue('templateUrl');
                 }
                 return configRef;
               }

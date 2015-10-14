@@ -290,7 +290,7 @@
         var cache = null;
         return {
           'request': function(config) {
-            if (config.url.match(/\.(jpe?g|png|gif|bmp|html|json)$/gi) && config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
+            if (config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
               return config || $q.when(config);
             }
             var currentRouteRef = $factoriesForStateHandleProvider.$route.current,

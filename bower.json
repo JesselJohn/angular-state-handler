@@ -3,9 +3,9 @@
   "version": "1.0.2",
   "dependencies": {
     "angular": "^1.3.0",
-    "angular-route": "^1.3.0"
+    "angular-route": "^1.3.0",
+    "cycle-js":"^0.0.1"
   },
-  "appPath": "app",
   "homepage": "https://github.com/JesselJohn/angular-state-handler",
   "authors": [
     "Jessel John <jessel@grabhouse.com>"
@@ -16,12 +16,5 @@
     "angular",
     "routing"
   ],
-  "license": "MIT",
-  "ignore": [
-    "**/.*",
-    "node_modules",
-    "bower_components",
-    "test",
-    "tests"
-  ]
+  "license": "MIT"
 }

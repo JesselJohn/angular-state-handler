@@ -16,5 +16,6 @@
     "angular",
     "routing"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "ignore":[]
 }

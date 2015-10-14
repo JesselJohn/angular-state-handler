@@ -153,25 +153,25 @@
     }
   ]);
 
-  app.run(['$route', '$location', function($route, $location){
-    function getPropertyValueFromHistoryStateFn(prop){
+  app.run(['$route', '$location', function($route, $location) {
+    function getPropertyValueFromHistoryStateFn(prop) {
       var historyState = $location.$$state;
       if (historyState && ('path' in historyState)) {
-        if(routeHash[historyState.path] && (prop in routeHash[historyState.path])){
+        if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
           return routeHash[historyState.path][prop];
         }
       }
       var fallBackValue = undefined;
-      for(var _a3 in routeHash){
+      for (var _a3 in routeHash) {
         var regexp = new RegExp(routeHash[_a3].regexp),
           currentRoute = routeHash[_a3];
-        if(prop in currentRoute){
-          if(historyState && 'path' in historyState && regexp.test(historyState.path)){
-            if(prop in routeHash[_a3]){
+        if (prop in currentRoute) {
+          if (historyState && 'path' in historyState && regexp.test(historyState.path)) {
+            if (prop in routeHash[_a3]) {
               return routeHash[_a3][prop];
             }
           }
-          if(fallBackValue===undefined){
+          if (fallBackValue === undefined) {
             fallBackValue = routeHash[_a3][prop];
           }
         }
@@ -207,10 +207,10 @@
                 if ($stateHandle.route !== undefined) {
                   return $stateHandle.route.controller;
                 } else if ($factoriesForStateHandleProvider.$location.$$state !== null) {
-                  try{
+                  try {
                     // Throws error if controller property not found
                     return routeHash[$factoriesForStateHandleProvider.$location.$$state.path].controller;
-                  }catch(err){
+                  } catch (err) {
                     // If state path doesn't match paths in routeHash
                     // Possible that the route specified is an expression
                     // We can parse the routes and retrieve the controller property by matching paths with regex
@@ -290,7 +290,7 @@
         var cache = null;
         return {
           'request': function(config) {
-            if (config.url.match(/\.(jpe?g|png|gif|bmp|html)$/gi) && config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
+            if (config.url.match(/\.(jpe?g|png|gif|bmp|html|json)$/gi) && config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
               return config || $q.when(config);
             }
             var currentRouteRef = $factoriesForStateHandleProvider.$route.current,

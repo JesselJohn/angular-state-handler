@@ -46,7 +46,7 @@
               }
 
               if (current.controllerSetting) {
-                current.controller = $injector.invoke(current.controllerSetting);
+                current.controller = $injector.invoke(['$stateHandle', current.controllerSetting]);
               }
 
               ngViewRef.link.apply(null, arguments);

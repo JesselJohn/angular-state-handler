@@ -8,7 +8,7 @@
 */
 
 ! function(window, angular, undefined) {
-  // "use strict";
+  "use strict";
   var app = angular.module("stateHandler", ["ngRoute"]),
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
@@ -26,14 +26,14 @@
       getFactoryReferenceFn("$location");
 
       function getFactoryReferenceFn(factoryName) {
-        $provide.decorator(factoryName, factoryDecoratorFn);
+        $provide.decorator(factoryName, ['$delegate', factoryDecoratorFn]);
 
         function factoryDecoratorFn($delegate) {
           return obj[factoryName] = $delegate;
         };
       }
 
-      $provide.decorator("ngViewDirective", ngViewDirectiveDecoratorFn);
+      $provide.decorator("ngViewDirective", ['$delegate', '$route', '$location', '$injector', '$window', '$stateHandle', ngViewDirectiveDecoratorFn]);
 
       function ngViewDirectiveDecoratorFn($delegate, $route, $location, $injector, $window, $stateHandle) {
         if ($route !== randomTemplateUrl) {
@@ -286,7 +286,7 @@
         return previousUrl;
       };
 
-      $httpProvider.interceptors.push(function($q, $location, $timeout) {
+      $httpProvider.interceptors.push(['$q', '$location', '$timeout', function($q, $location, $timeout) {
         var cache = null;
         return {
           'request': function(config) {
@@ -336,7 +336,7 @@
             return config || $q.when(config);
           }
         }
-      });
+      }]);
 
       $locationProvider.html5Mode(true);
     }

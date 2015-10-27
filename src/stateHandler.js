@@ -68,7 +68,8 @@
     function($provide, $factoriesForStateHandleProvider) {
       var $browser = undefined,
         identityHash = {},
-        userAuthenticated = false,
+        authDeferred = undefined,
+        userAuthenticated = undefined,
         authParams = {
           path: undefined,
           route: null
@@ -79,6 +80,7 @@
           this.callBacks = [];
         },
         obj = {
+          setAuthDefer: setAuthDefer,
           subscribe: subscribeFn,
           getSubscribers: getSubscribersFn,
           setUserAuth: setUserAuthFn,
@@ -97,6 +99,10 @@
           }
         };
 
+      function setAuthDefer($q) {
+        authDeferred = $q.defer();
+      };
+
       function subscribeFn(subscriber, pathExpr) {
         if (!(pathExpr in identityHash)) {
           identityHash[pathExpr] = {};
@@ -112,12 +118,17 @@
       };
 
       function setUserAuthFn(bool) {
-        userAuthenticated = true;
+        userAuthenticated = bool;
+        if (authDeferred) {
+          authDeferred.resolve(userAuthenticated);
+        } else {
+          console.warn("Not properly deferred");
+        }
         return this;
       };
 
       function getUserAuthFn() {
-        return userAuthenticated;
+        return authDeferred.promise;
       };
 
       function setAuthParamsFn(path, route) {
@@ -153,7 +164,7 @@
     }
   ]);
 
-  app.run(['$route', '$location', function($route, $location) {
+  app.run(['$route', '$location', '$stateHandle', '$q', function($route, $location, $stateHandle, $q) {
     function getPropertyValueFromHistoryStateFn(prop) {
       var historyState = $location.$$state;
       if (historyState && ('path' in historyState)) {
@@ -178,6 +189,7 @@
       }
       return fallBackValue;
     };
+    $stateHandle.setAuthDefer($q);
     routeHash = $route.routes;
     routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
   }]);

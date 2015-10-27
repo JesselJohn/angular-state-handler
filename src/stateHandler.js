@@ -69,7 +69,7 @@
       var $browser = undefined,
         identityHash = {},
         authDeferred = undefined,
-        userAuthenticated = undefined,
+        userAuthenticated = false,
         authParams = {
           path: undefined,
           route: null
@@ -146,10 +146,14 @@
         that.callBacks.push(callback);
 
         $factoriesForStateHandleProvider.$timeout(function() {
-          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
-            callback($factoriesForStateHandleProvider.$route.current.params);
+          try {
+            if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
+              callback($factoriesForStateHandleProvider.$route.current.params);
+            }
+          } catch (err) {
+            // Route unsuccessful
           }
-        });
+        }, 0, false);
       };
 
       _constructor.prototype = {
@@ -164,15 +168,18 @@
     }
   ]);
 
-  app.run(['$route', '$location', '$stateHandle', '$q', function($route, $location, $stateHandle, $q) {
+  app.run(['$rootScope', '$route', '$location', '$stateHandle', '$timeout', '$q', function($rootScope, $route, $location, $stateHandle, $timeout, $q) {
+    var authParamsRef = $stateHandle.getAuthParams();
+
     function getPropertyValueFromHistoryStateFn(prop) {
-      var historyState = $location.$$state;
+      var historyState = $location.$$state,
+        fallBackValue = undefined;
+
       if (historyState && ('path' in historyState)) {
         if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
           return routeHash[historyState.path][prop];
         }
       }
-      var fallBackValue = undefined;
       for (var _a3 in routeHash) {
         var regexp = new RegExp(routeHash[_a3].regexp),
           currentRoute = routeHash[_a3];
@@ -189,9 +196,25 @@
       }
       return fallBackValue;
     };
+
+    function $routeChangeStartFn(event, current, previous) {
+      if (current.authentication === true) {
+        event.preventDefault();
+        $stateHandle.getUserAuth().then(function() {
+          $location.path(routeHash.getPropertyValue('originalPath'));
+          $timeout(function() {
+            $location.path(authParamsRef.path);
+          });
+        });
+      }
+    };
+
+
     $stateHandle.setAuthDefer($q);
     routeHash = $route.routes;
     routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
+
+    $rootScope.$on('$routeChangeStart', $routeChangeStartFn);
   }]);
 
   app.config(["$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
@@ -276,15 +299,7 @@
 
       function resetRouteFn(callback) {
         var $locationRef = $factoriesForStateHandleProvider.$location;
-        $locationRef.path(previousUrl || ($locationRef.$$state && $locationRef.$$state.path ||
-          function() {
-            for (var _a in routeHash) {
-              if (routeHash[_a].templateUrl !== undefined) {
-                return routeHash[_a].templateUrl;
-              }
-            }
-          }()
-        ));
+        $locationRef.path(previousUrl || ($locationRef.$$state && $locationRef.$$state.path || routeHash.getPropertyValue('originalPath')));
       };
 
       $stateHandle.remove = $stateHandleProvider.remove = removeFn;
@@ -306,13 +321,7 @@
               return config || $q.when(config);
             }
             var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
-              subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath),
-              authParamsRef = $stateHandle.getAuthParams();
-
-            if (authParamsRef.path !== undefined && currentRouteRef.authentication && !$stateHandle.getUserAuth()) {
-              $location.path(authParamsRef.path);
-              return config.url === randomTemplateUrl ? cache : config;
-            }
+              subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath);
 
             $timeout.cancel(callbackTimeoutID);
             callbackTimeoutID = $timeout(function() {

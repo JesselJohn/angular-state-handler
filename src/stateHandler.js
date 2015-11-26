@@ -8,7 +8,7 @@
 */
 
 ! function(window, angular, undefined) {
-  "use strict";
+  // "use strict";
   var app = angular.module("stateHandler", ["ngRoute"]),
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
@@ -32,6 +32,7 @@
           return obj[factoryName] = $delegate;
         };
       }
+
       return obj;
     }
   ]);
@@ -131,7 +132,8 @@
       previousUrl = undefined,
       rechangeLocation = false,
       newTempUrl = undefined,
-      dummyElem = document.createElement("a");
+      dummyElem = document.createElement("a"),
+      callbackTimeoutID = null;
 
     function getPropertyValueFromHistoryStateFn(prop) {
       var historyState = $location.$$state;
@@ -160,13 +162,13 @@
     }
 
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
-      console.log(newTempUrl);
       var newUrl = newTempUrl || newUrl;
 
       if (newUrl.templateUrl == randomTemplateUrl) {
+        $stateHandle.route = newUrl;
         event.preventDefault();
         isViewSet = true;
-        $stateHandle.pushStateOnStateChange(previousUrl);
+        $rootScope.$broadcast('$routeUpdate', $route);
         return;
       } else if (newTempUrl !== undefined) {
         newTempUrl = undefined;
@@ -179,15 +181,39 @@
         return;
       }
 
+      $stateHandle.route = newUrl;
       previousUrl = $location.path();
     });
 
     $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
+      var currentPath = function() {
+          // console.log(rechangeLocation);
+          dummyElem.href = rechangeLocation ? prevUrl : newUrl;
+          return {
+            path: dummyElem.pathname,
+            fullPath: dummyElem.pathname + dummyElem.search
+          };
+        }(),
+        callSubscribers = function(path) {
+          var subscribers = $stateHandle.getSubscribers(path);
+          $timeout(function() {
+            for (var a in subscribers) {
+              var subscriberCallbacks = subscribers[a].callBacks;
+              for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+                subscriberCallbacks[i]($stateHandle.route.params);
+              }
+            }
+          }, 0);
+        };
+
       if (rechangeLocation) {
         rechangeLocation = false;
-        dummyElem.href = prevUrl;
-        console.log(dummyElem.pathname);
-        $location.path(dummyElem.pathname);
+        callSubscribers(currentPath.path);
+        $location.path(currentPath.path);
+        return;
+      }
+      if (isViewSet) {
+        callSubscribers(currentPath.path);
       }
     });
 

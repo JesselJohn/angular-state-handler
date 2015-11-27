@@ -128,12 +128,9 @@
   ]);
 
   app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', function($route, $location, $rootScope, $timeout, $stateHandle, $window) {
-    var isViewSet = false,
-      previousUrl = undefined,
-      rechangeLocation = false,
-      newTempUrl = undefined,
+    var previousUrl = undefined,
       dummyElem = document.createElement("a"),
-      callbackTimeoutID = null;
+      original = $location.path;
 
     function getPropertyValueFromHistoryStateFn(prop) {
       var historyState = $location.$$state;
@@ -162,22 +159,11 @@
     }
 
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
-      var newUrl = newTempUrl || newUrl;
+      var newUrl = newUrl;
 
       if (newUrl.templateUrl == randomTemplateUrl) {
-        $stateHandle.route = newUrl;
-        event.preventDefault();
+        $stateHandle.path("/user/signin", false);
         isViewSet = true;
-        $rootScope.$broadcast('$routeUpdate', $route);
-        return;
-      } else if (newTempUrl !== undefined) {
-        newTempUrl = undefined;
-        rechangeLocation = true;
-      }
-      if (isViewSet) {
-        event.preventDefault();
-        isViewSet = false;
-        newTempUrl = newUrl;
         return;
       }
 
@@ -187,8 +173,7 @@
 
     $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
       var currentPath = function() {
-          // console.log(rechangeLocation);
-          dummyElem.href = rechangeLocation ? prevUrl : newUrl;
+          dummyElem.href = newUrl;
           return {
             path: dummyElem.pathname,
             fullPath: dummyElem.pathname + dummyElem.search
@@ -196,26 +181,29 @@
         }(),
         callSubscribers = function(path) {
           var subscribers = $stateHandle.getSubscribers(path);
-          $timeout(function() {
-            for (var a in subscribers) {
-              var subscriberCallbacks = subscribers[a].callBacks;
-              for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-                subscriberCallbacks[i]($stateHandle.route.params);
-              }
+          for (var a in subscribers) {
+            var subscriberCallbacks = subscribers[a].callBacks;
+            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+              subscriberCallbacks[i]($stateHandle.route.params);
             }
-          }, 0);
+          }
         };
 
-      if (rechangeLocation) {
-        rechangeLocation = false;
+      $timeout(function() {
         callSubscribers(currentPath.path);
-        $location.path(currentPath.path);
-        return;
-      }
-      if (isViewSet) {
-        callSubscribers(currentPath.path);
-      }
+      }, 100);
     });
+
+    $stateHandle.path = function(path, reload) {
+      if (reload === false) {
+        var lastRoute = $route.current,
+          un = $rootScope.$on('$locationChangeSuccess', function() {
+            $route.current = lastRoute;
+            un();
+          });
+      }
+      return original.apply($location, [path]);
+    };
 
     routeHash = $route.routes;
     routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
@@ -227,7 +215,6 @@
         previousUrl = undefined,
         whenFn = cloneRouteProviderFn.call($stateHandleProvider, 'when'),
         otherwiseFn = cloneRouteProviderFn.call($stateHandleProvider, 'otherwise'),
-        callbackTimeoutID = null,
         urlBeforeViewSet = undefined;
 
       function cloneRouteProviderFn(prop) {

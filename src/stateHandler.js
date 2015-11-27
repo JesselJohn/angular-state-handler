@@ -8,7 +8,7 @@
 */
 
 ! function(window, angular, undefined) {
-  // "use strict";
+  "use strict";
   var app = angular.module("stateHandler", ["ngRoute"]),
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
@@ -161,13 +161,12 @@
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
       var newUrl = newUrl;
 
+      $stateHandle.route = newUrl;
       if (newUrl.templateUrl == randomTemplateUrl) {
         $stateHandle.path("/user/signin", false);
-        isViewSet = true;
         return;
       }
 
-      $stateHandle.route = newUrl;
       previousUrl = $location.path();
     });
 

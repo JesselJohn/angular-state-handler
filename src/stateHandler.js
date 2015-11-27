@@ -33,32 +33,6 @@
         };
       }
 
-      $provide.decorator("ngViewDirective", ['$delegate', '$route', '$location', '$injector', '$window', '$stateHandle', ngViewDirectiveDecoratorFn]);
-
-      function ngViewDirectiveDecoratorFn($delegate, $route, $location, $injector, $window, $stateHandle) {
-        if ($route !== randomTemplateUrl) {
-          var ngViewRef = $delegate[$delegate.length - 1],
-            compileRef = ngViewRef.compile || function() {},
-            link = function() {
-              var current = $route.current;
-              if (current.loadedTemplateUrl === randomTemplateUrl) {
-                $stateHandle.pushStateOnStateChange($stateHandle.getPreviousUrl());
-              }
-
-              if (current.controllerSetting) {
-                current.controller = $injector.invoke(['$stateHandle', current.controllerSetting]);
-              }
-
-              ngViewRef.link.apply(null, arguments);
-            };
-          ngViewRef.compile = function() {
-            compileRef.apply(ngViewRef, arguments);
-            return link;
-          };
-        }
-
-        return $delegate;
-      };
       return obj;
     }
   ]);
@@ -68,8 +42,7 @@
     function($provide, $factoriesForStateHandleProvider) {
       var $browser = undefined,
         identityHash = {},
-        authDeferred = undefined,
-        userAuthenticated = undefined,
+        userAuthenticated = false,
         authParams = {
           path: undefined,
           route: null
@@ -80,28 +53,14 @@
           this.callBacks = [];
         },
         obj = {
-          setAuthDefer: setAuthDefer,
           subscribe: subscribeFn,
           getSubscribers: getSubscribersFn,
           setUserAuth: setUserAuthFn,
           getUserAuth: getUserAuthFn,
           setAuthParams: setAuthParamsFn,
           getAuthParams: getAuthParamsFn,
-          pushStateOnStateChange: function(previousUrl) {
-            if (previousUrl !== undefined) {
-              var that = this;
-              if (window.history && window.history.pushState) {
-                window.history.pushState({
-                  'path': previousUrl
-                }, $factoriesForStateHandleProvider.$location.path());
-              }
-            }
-          }
+          pushStateOnStateChange: pushStateOnStateChangeFn
         };
-
-      function setAuthDefer($q) {
-        authDeferred = $q.defer();
-      };
 
       function subscribeFn(subscriber, pathExpr) {
         if (!(pathExpr in identityHash)) {
@@ -111,50 +70,54 @@
         }
 
         return identityHash[pathExpr][subscriber] || (identityHash[pathExpr][subscriber] = new _constructor(subscriber, pathExpr));
-      };
+      }
 
       function getSubscribersFn(pathExpr) {
         return identityHash[pathExpr];
-      };
+      }
 
       function setUserAuthFn(bool) {
-        userAuthenticated = bool;
-        if (authDeferred) {
-          authDeferred.resolve(userAuthenticated);
-        } else {
-          console.warn("Not properly deferred");
-        }
+        userAuthenticated = true;
         return this;
-      };
+      }
 
       function getUserAuthFn() {
-        return authDeferred.promise;
-      };
+        return userAuthenticated;
+      }
 
       function setAuthParamsFn(path, route) {
         authParams.path = path;
         authParams.route = route;
         return this;
-      };
+      }
 
       function getAuthParamsFn() {
         return authParams;
-      };
+      }
 
       function subscriberResponseFn(callback) {
         var that = this;
         that.callBacks.push(callback);
 
-        $factoriesForStateHandleProvider.$timeout(function() {
-          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
-            callback($factoriesForStateHandleProvider.$route.current.params);
-          }
-        });
+        if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
+          callback($factoriesForStateHandleProvider.$route.current.params);
+        }
       };
+
+      function pushStateOnStateChangeFn(previousUrl) {
+        if (previousUrl !== undefined) {
+          var that = this;
+          if (window.history && window.history.pushState) {
+            window.history.pushState({
+              'path': previousUrl
+            }, "adewgyi");
+          }
+        }
+      }
 
       _constructor.prototype = {
         response: subscriberResponseFn
-      };
+      }
 
       return {
         $get: function() {
@@ -164,34 +127,112 @@
     }
   ]);
 
-  app.run(['$route', '$location', '$stateHandle', '$q', function($route, $location, $stateHandle, $q) {
-    function getPropertyValueFromHistoryStateFn(prop) {
+  app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', function($route, $location, $rootScope, $timeout, $stateHandle, $window) {
+    var previousUrl = undefined,
+      dummyElem = document.createElement("a"),
+      original = $location.path,
+      callbackTimeoutId = null;
+
+    // function getPropertyValueFromHistoryStateFn(prop) {
+    //   var historyState = $location.$$state;
+    //   if (historyState && ('path' in historyState)) {
+    //     if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
+    //       return routeHash[historyState.path][prop];
+    //     }
+    //   }
+    //   var fallBackValue = undefined;
+    //   for (var _a3 in routeHash) {
+    //     var regexp = new RegExp(routeHash[_a3].regexp),
+    //       currentRoute = routeHash[_a3];
+    //     if (prop in currentRoute) {
+    //       if (historyState && 'path' in historyState && regexp.test(historyState.path)) {
+    //         if (prop in routeHash[_a3]) {
+    //           return routeHash[_a3][prop];
+    //         }
+    //       }
+    //       if (fallBackValue === undefined) {
+    //         fallBackValue = routeHash[_a3][prop];
+    //       }
+    //     }
+    //   }
+
+    //   return fallBackValue;
+    // }
+
+    function getPrevUrlIfReloadWhenViewIsSetFn() {
       var historyState = $location.$$state;
       if (historyState && ('path' in historyState)) {
-        if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
-          return routeHash[historyState.path][prop];
+        return historyState.path;
+      } else {
+        for (var a in routeHash) {
+          if (/\/$/.test(a) === true) {
+            return a;
+          }
         }
       }
-      var fallBackValue = undefined;
-      for (var _a3 in routeHash) {
-        var regexp = new RegExp(routeHash[_a3].regexp),
-          currentRoute = routeHash[_a3];
-        if (prop in currentRoute) {
-          if (historyState && 'path' in historyState && regexp.test(historyState.path)) {
-            if (prop in routeHash[_a3]) {
-              return routeHash[_a3][prop];
+    }
+
+    $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
+      var newUrl = newUrl;
+      $stateHandle.route = newUrl;
+      if (newUrl.templateUrl == randomTemplateUrl) {
+        if (prevUrl === undefined) {
+          var location = $location.path(),
+            pathToSet = getPrevUrlIfReloadWhenViewIsSetFn();
+          $stateHandle.path(pathToSet);
+          $timeout(function() {
+            $stateHandle.path(location, false);
+          });
+        } else {
+          $stateHandle.path($location.path(), false);
+          if (previousUrl !== undefined) {
+            $location.state({
+              path: previousUrl
+            });
+          }
+        }
+      }
+
+      previousUrl = $location.path();
+    });
+
+    $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
+      var currentPath = function() {
+          dummyElem.href = newUrl;
+          return {
+            path: dummyElem.pathname,
+            fullPath: dummyElem.pathname + dummyElem.search
+          };
+        }(),
+        callSubscribers = function(path) {
+          var subscribers = $stateHandle.getSubscribers(path);
+          for (var a in subscribers) {
+            var subscriberCallbacks = subscribers[a].callBacks;
+            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+              subscriberCallbacks[i]($stateHandle.route.params);
             }
           }
-          if (fallBackValue === undefined) {
-            fallBackValue = routeHash[_a3][prop];
-          }
-        }
+        };
+
+      $timeout.cancel(callbackTimeoutId);
+      callbackTimeoutId = $timeout(function() {
+        callSubscribers(currentPath.path);
+      }, 100);
+    });
+
+    $stateHandle.path = function(path, reload) {
+      if (reload === false) {
+        var lastRoute = $route.current,
+          un = $rootScope.$on('$locationChangeSuccess', function() {
+            $route.current = lastRoute;
+            un();
+          });
       }
-      return fallBackValue;
+      return original.apply($location, [path]);
     };
-    $stateHandle.setAuthDefer($q);
+
     routeHash = $route.routes;
-    routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
+    // routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
   }]);
 
   app.config(["$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
@@ -200,7 +241,7 @@
         previousUrl = undefined,
         whenFn = cloneRouteProviderFn.call($stateHandleProvider, 'when'),
         otherwiseFn = cloneRouteProviderFn.call($stateHandleProvider, 'otherwise'),
-        callbackTimeoutID = null;
+        urlBeforeViewSet = undefined;
 
       function cloneRouteProviderFn(prop) {
         var that = this,
@@ -214,30 +255,12 @@
                 routeTemplateUrlCollection.push(route.templateUrl);
               }
             }
-            if (!('controller' in route || 'controllerSetting' in route)) {
-              route.controllerSetting = function($stateHandle) {
-                if ($stateHandle.route !== undefined) {
-                  return $stateHandle.route.controller;
-                } else if ($factoriesForStateHandleProvider.$location.$$state !== null) {
-                  try {
-                    // Throws error if controller property not found
-                    return routeHash[$factoriesForStateHandleProvider.$location.$$state.path].controller;
-                  } catch (err) {
-                    // If state path doesn't match paths in routeHash
-                    // Possible that the route specified is an expression
-                    // We can parse the routes and retrieve the controller property by matching paths with regex
-                    return routeHash.getPropertyValue('controller');
-                  }
-                }
-                return "";
-              };
-            }
           }
 
           functionRef.apply($routeProvider, arguments);
           return (that);
         };
-      };
+      }
 
       function removeFn(path) {
         var $routeRef = $routeProvider.$get();
@@ -245,16 +268,16 @@
         delete($routeRef.routes[path]);
         delete($routeRef.routes[path + "/"]);
         return (this);
-      };
+      }
 
       function removeCurrentFn() {
         var $routeRef = $routeProvider.$get();
         return (this.remove($routeRef.current.originalPath));
-      };
+      }
 
       function reloadRouteFn() {
         $factoriesForStateHandleProvider.$route.reload();
-      };
+      }
 
       function noAuthFn(path, route) {
         var that = this,
@@ -272,7 +295,7 @@
 
         $stateHandleProvider.when(path, route || {});
         return that;
-      };
+      }
 
       function resetRouteFn(callback) {
         var $locationRef = $factoriesForStateHandleProvider.$location;
@@ -285,7 +308,7 @@
             }
           }()
         ));
-      };
+      }
 
       $stateHandle.remove = $stateHandleProvider.remove = removeFn;
       $stateHandle.removeCurrent = $stateHandleProvider.removeCurrent = removeCurrentFn;
@@ -297,58 +320,6 @@
       $stateHandle.getPreviousUrl = function() {
         return previousUrl;
       };
-
-      $httpProvider.interceptors.push(['$q', '$location', '$timeout', function($q, $location, $timeout) {
-        var cache = null;
-        return {
-          'request': function(config) {
-            if (config.url !== randomTemplateUrl && routeTemplateUrlCollection.indexOf(config.url) === -1) {
-              return config || $q.when(config);
-            }
-            var currentRouteRef = $factoriesForStateHandleProvider.$route.current,
-              subscribers = $stateHandle.getSubscribers(currentRouteRef.originalPath),
-              authParamsRef = $stateHandle.getAuthParams();
-
-            if (authParamsRef.path !== undefined && currentRouteRef.authentication && !$stateHandle.getUserAuth()) {
-              $location.path(authParamsRef.path);
-              return config.url === randomTemplateUrl ? cache : config;
-            }
-
-            $timeout.cancel(callbackTimeoutID);
-            callbackTimeoutID = $timeout(function() {
-              for (var a in subscribers) {
-                var subscriberCallbacks = subscribers[a].callBacks;
-                for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-                  subscriberCallbacks[i](currentRouteRef.params);
-                }
-              }
-            });
-
-            if (config.url === randomTemplateUrl) {
-              if (cache !== null) {
-                return cache;
-              } else {
-                var configRef = JSON.decycle(config);
-                try {
-                  // Throws error if templateUrl property not found
-                  configRef.url = routeHash[$location.$$state.path].templateUrl;
-                } catch (err) {
-                  // If state path doesn't match paths in routeHash
-                  // Possible that the route specified is an expression
-                  // We can parse the routes and retrieve the controller property by matching paths with regex
-                  configRef.url = routeHash.getPropertyValue('templateUrl');
-                }
-                return configRef;
-              }
-            }
-
-            cache = config;
-            $stateHandle.route = JSON.decycle($factoriesForStateHandleProvider.$route.current.$$route);
-            previousUrl = $location.path();
-            return config || $q.when(config);
-          }
-        }
-      }]);
 
       $locationProvider.html5Mode(true);
     }

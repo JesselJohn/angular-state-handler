@@ -179,7 +179,6 @@
         if (prevUrl === undefined) {
           var location = $location.path(),
             pathToSet = getPrevUrlIfReloadWhenViewIsSetFn();
-          console.log(pathToSet);
           $stateHandle.path(pathToSet);
           $timeout(function() {
             $stateHandle.path(location, false);

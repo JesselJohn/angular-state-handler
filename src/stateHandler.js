@@ -59,16 +59,7 @@
           getUserAuth: getUserAuthFn,
           setAuthParams: setAuthParamsFn,
           getAuthParams: getAuthParamsFn,
-          pushStateOnStateChange: function(previousUrl) {
-            if (previousUrl !== undefined) {
-              var that = this;
-              if (window.history && window.history.pushState) {
-                window.history.pushState({
-                  'path': previousUrl
-                }, $factoriesForStateHandleProvider.$location.path(), $factoriesForStateHandleProvider.$location.path());
-              }
-            }
-          }
+          pushStateOnStateChange: pushStateOnStateChangeFn
         };
 
       function subscribeFn(subscriber, pathExpr) {
@@ -108,12 +99,21 @@
         var that = this;
         that.callBacks.push(callback);
 
-        $factoriesForStateHandleProvider.$timeout(function() {
-          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
-            callback($factoriesForStateHandleProvider.$route.current.params);
-          }
-        });
+        if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
+          callback($factoriesForStateHandleProvider.$route.current.params);
+        }
       };
+
+      function pushStateOnStateChangeFn(previousUrl) {
+        if (previousUrl !== undefined) {
+          var that = this;
+          if (window.history && window.history.pushState) {
+            window.history.pushState({
+              'path': previousUrl
+            }, "adewgyi");
+          }
+        }
+      }
 
       _constructor.prototype = {
         response: subscriberResponseFn
@@ -130,41 +130,68 @@
   app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', function($route, $location, $rootScope, $timeout, $stateHandle, $window) {
     var previousUrl = undefined,
       dummyElem = document.createElement("a"),
-      original = $location.path;
+      original = $location.path,
+      callbackTimeoutId = null;
 
-    function getPropertyValueFromHistoryStateFn(prop) {
+    // function getPropertyValueFromHistoryStateFn(prop) {
+    //   var historyState = $location.$$state;
+    //   if (historyState && ('path' in historyState)) {
+    //     if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
+    //       return routeHash[historyState.path][prop];
+    //     }
+    //   }
+    //   var fallBackValue = undefined;
+    //   for (var _a3 in routeHash) {
+    //     var regexp = new RegExp(routeHash[_a3].regexp),
+    //       currentRoute = routeHash[_a3];
+    //     if (prop in currentRoute) {
+    //       if (historyState && 'path' in historyState && regexp.test(historyState.path)) {
+    //         if (prop in routeHash[_a3]) {
+    //           return routeHash[_a3][prop];
+    //         }
+    //       }
+    //       if (fallBackValue === undefined) {
+    //         fallBackValue = routeHash[_a3][prop];
+    //       }
+    //     }
+    //   }
+
+    //   return fallBackValue;
+    // }
+
+    function getPrevUrlIfReloadWhenViewIsSetFn() {
       var historyState = $location.$$state;
       if (historyState && ('path' in historyState)) {
-        if (routeHash[historyState.path] && (prop in routeHash[historyState.path])) {
-          return routeHash[historyState.path][prop];
-        }
-      }
-      var fallBackValue = undefined;
-      for (var _a3 in routeHash) {
-        var regexp = new RegExp(routeHash[_a3].regexp),
-          currentRoute = routeHash[_a3];
-        if (prop in currentRoute) {
-          if (historyState && 'path' in historyState && regexp.test(historyState.path)) {
-            if (prop in routeHash[_a3]) {
-              return routeHash[_a3][prop];
-            }
-          }
-          if (fallBackValue === undefined) {
-            fallBackValue = routeHash[_a3][prop];
+        return historyState.path;
+      } else {
+        for (var a in routeHash) {
+          if (/\/$/.test(a) === true) {
+            return a;
           }
         }
       }
-
-      return fallBackValue;
     }
 
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
       var newUrl = newUrl;
-
       $stateHandle.route = newUrl;
       if (newUrl.templateUrl == randomTemplateUrl) {
-        $stateHandle.path("/user/signin", false);
-        return;
+        if (prevUrl === undefined) {
+          var location = $location.path(),
+            pathToSet = getPrevUrlIfReloadWhenViewIsSetFn();
+          console.log(pathToSet);
+          $stateHandle.path(pathToSet);
+          $timeout(function() {
+            $stateHandle.path(location, false);
+          });
+        } else {
+          $stateHandle.path($location.path(), false);
+          if (previousUrl !== undefined) {
+            $location.state({
+              path: previousUrl
+            });
+          }
+        }
       }
 
       previousUrl = $location.path();
@@ -188,7 +215,8 @@
           }
         };
 
-      $timeout(function() {
+      $timeout.cancel(callbackTimeoutId);
+      callbackTimeoutId = $timeout(function() {
         callSubscribers(currentPath.path);
       }, 100);
     });
@@ -205,7 +233,7 @@
     };
 
     routeHash = $route.routes;
-    routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
+    // routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
   }]);
 
   app.config(["$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",

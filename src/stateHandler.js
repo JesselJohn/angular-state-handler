@@ -12,7 +12,15 @@
   var app = angular.module("stateHandler", ["ngRoute"]),
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
-    routeTemplateUrlCollection = [];
+    routeTemplateUrlCollection = [],
+    dummyElem = document.createElement("a"),
+    getRelativePath = function(url) {
+      dummyElem.href = url;
+      return {
+        path: dummyElem.pathname,
+        fullPath: dummyElem.pathname + dummyElem.search
+      };
+    };
 
   // Factories required to configure this module
   app.provider('$factoriesForStateHandle', ["$provide",
@@ -129,9 +137,9 @@
 
   app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', function($route, $location, $rootScope, $timeout, $stateHandle, $window) {
     var previousUrl = undefined,
-      dummyElem = document.createElement("a"),
       original = $location.path,
-      callbackTimeoutId = null;
+      callbackTimeoutId = null,
+      isNewLoaded = true;
 
     // function getPropertyValueFromHistoryStateFn(prop) {
     //   var historyState = $location.$$state;
@@ -191,34 +199,43 @@
             });
           }
         }
+      } else {
+        previousUrl = $location.path();
       }
-
-      previousUrl = $location.path();
     });
 
     $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
-      var currentPath = function() {
-          dummyElem.href = newUrl;
-          return {
-            path: dummyElem.pathname,
-            fullPath: dummyElem.pathname + dummyElem.search
-          };
-        }(),
-        callSubscribers = function(path) {
-          var subscribers = $stateHandle.getSubscribers(path);
-          for (var a in subscribers) {
-            var subscriberCallbacks = subscribers[a].callBacks;
-            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-              subscriberCallbacks[i]($stateHandle.route.params);
-            }
+      var callSubscribers = function(path) {
+        var subscribers = $stateHandle.getSubscribers(path);
+        for (var a in subscribers) {
+          var subscriberCallbacks = subscribers[a].callBacks;
+          for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+            subscriberCallbacks[i]($stateHandle.route.params);
           }
-        };
+        }
+        if (isNewLoaded && path != previousUrl) {
+          isNewLoaded = false;
+          callSubscribers(previousUrl);
+        }
+      };
 
       $timeout.cancel(callbackTimeoutId);
       callbackTimeoutId = $timeout(function() {
-        callSubscribers(currentPath.path);
+        callSubscribers(getRelativePath(newUrl).path);
       }, 100);
     });
+
+    function resetRouteFn(callback) {
+      $stateHandle.path(previousUrl || ($location.$$state && $location.$$state.path ||
+        function() {
+          for (var _a in routeHash) {
+            if (/\/$/.test(a) === true) {
+              return a;
+            }
+          }
+        }()
+      ), false);
+    }
 
     $stateHandle.path = function(path, reload) {
       if (reload === false) {
@@ -231,6 +248,8 @@
       return original.apply($location, [path]);
     };
 
+    $stateHandle.resetRoute = resetRouteFn;
+
     routeHash = $route.routes;
     // routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;
   }]);
@@ -238,7 +257,6 @@
   app.config(["$provide", "$routeProvider", "$httpProvider", "$locationProvider", "$stateHandleProvider", "$factoriesForStateHandleProvider",
     function($provide, $routeProvider, $httpProvider, $locationProvider, $stateHandleProvider, $factoriesForStateHandleProvider) {
       var $stateHandle = $stateHandleProvider.$get(),
-        previousUrl = undefined,
         whenFn = cloneRouteProviderFn.call($stateHandleProvider, 'when'),
         otherwiseFn = cloneRouteProviderFn.call($stateHandleProvider, 'otherwise'),
         urlBeforeViewSet = undefined;
@@ -297,29 +315,12 @@
         return that;
       }
 
-      function resetRouteFn(callback) {
-        var $locationRef = $factoriesForStateHandleProvider.$location;
-        $locationRef.path(previousUrl || ($locationRef.$$state && $locationRef.$$state.path ||
-          function() {
-            for (var _a in routeHash) {
-              if (routeHash[_a].templateUrl !== undefined) {
-                return routeHash[_a].templateUrl;
-              }
-            }
-          }()
-        ));
-      }
-
       $stateHandle.remove = $stateHandleProvider.remove = removeFn;
       $stateHandle.removeCurrent = $stateHandleProvider.removeCurrent = removeCurrentFn;
       $stateHandle.when = $stateHandleProvider.when = whenFn;
       $stateHandle.otherwise = $stateHandleProvider.otherwise = otherwiseFn;
       $stateHandle.reloadRoute = $stateHandleProvider.reloadRoute = reloadRouteFn;
       $stateHandle.noAuth = $stateHandleProvider.noAuth = noAuthFn;
-      $stateHandle.resetRoute = resetRouteFn;
-      $stateHandle.getPreviousUrl = function() {
-        return previousUrl;
-      };
 
       $locationProvider.html5Mode(true);
     }

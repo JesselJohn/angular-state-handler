@@ -106,7 +106,6 @@
       function subscriberResponseFn(callback) {
         var that = this;
         that.callBacks.push(callback);
-
         if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
           callback($factoriesForStateHandleProvider.$route.current.params);
         }
@@ -140,6 +139,8 @@
       original = $location.path,
       callbackTimeoutId = null,
       isNewLoaded = true;
+
+    $stateHandle.route = {};
 
     // function getPropertyValueFromHistoryStateFn(prop) {
     //   var historyState = $location.$$state;
@@ -182,7 +183,8 @@
 
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
       var newUrl = newUrl;
-      $stateHandle.route = newUrl;
+      $stateHandle.route.prevUrl = prevUrl;
+      $stateHandle.route.newUrl = newUrl;
       if (newUrl.templateUrl == randomTemplateUrl) {
         if (prevUrl === undefined) {
           var location = $location.path(),
@@ -205,23 +207,25 @@
     });
 
     $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
-      var callSubscribers = function(path) {
-        var subscribers = $stateHandle.getSubscribers(path);
+      var callSubscribers = function(route) {
+        var subscribers = $stateHandle.getSubscribers(route.originalPath);
         for (var a in subscribers) {
           var subscriberCallbacks = subscribers[a].callBacks;
-          for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-            subscriberCallbacks[i]($stateHandle.route.params);
+          if (subscribers[a].pathExpr !== $route.current.originalPath) {
+            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+              subscriberCallbacks[i](route.params);
+            }
           }
         }
-        if (isNewLoaded && path != previousUrl) {
+        if (isNewLoaded && $stateHandle.route.prevUrl !== undefined && route.originalPath !== $stateHandle.route.prevUrl.originalPath) {
           isNewLoaded = false;
-          callSubscribers(previousUrl);
+          callSubscribers($stateHandle.route.prevUrl);
         }
       };
 
       $timeout.cancel(callbackTimeoutId);
       callbackTimeoutId = $timeout(function() {
-        callSubscribers(getRelativePath(newUrl).path);
+        callSubscribers($stateHandle.route.newUrl);
       }, 100);
     });
 

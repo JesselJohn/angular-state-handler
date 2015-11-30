@@ -211,10 +211,8 @@
         var subscribers = $stateHandle.getSubscribers(route.originalPath);
         for (var a in subscribers) {
           var subscriberCallbacks = subscribers[a].callBacks;
-          if (subscribers[a].pathExpr !== $route.current.originalPath) {
-            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-              subscriberCallbacks[i](route.params);
-            }
+          for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+            subscriberCallbacks[i](route.params);
           }
         }
         if (isNewLoaded && $stateHandle.route.prevUrl !== undefined && route.originalPath !== $stateHandle.route.prevUrl.originalPath) {

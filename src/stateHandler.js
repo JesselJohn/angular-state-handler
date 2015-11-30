@@ -215,10 +215,11 @@
             subscriberCallbacks[i](route.params);
           }
         }
+
         if (isNewLoaded && $stateHandle.route.prevUrl !== undefined && route.originalPath !== $stateHandle.route.prevUrl.originalPath) {
-          isNewLoaded = false;
           callSubscribers($stateHandle.route.prevUrl);
         }
+        isNewLoaded = false;
       };
 
       $timeout.cancel(callbackTimeoutId);

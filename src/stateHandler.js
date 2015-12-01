@@ -50,7 +50,6 @@
     function($provide, $factoriesForStateHandleProvider) {
       var $browser = undefined,
         identityHash = {},
-        userAuthenticated = false,
         authParams = {
           path: undefined,
           route: null
@@ -63,8 +62,6 @@
         obj = {
           subscribe: subscribeFn,
           getSubscribers: getSubscribersFn,
-          setUserAuth: setUserAuthFn,
-          getUserAuth: getUserAuthFn,
           setAuthParams: setAuthParamsFn,
           getAuthParams: getAuthParamsFn,
           pushStateOnStateChange: pushStateOnStateChangeFn
@@ -82,15 +79,6 @@
 
       function getSubscribersFn(pathExpr) {
         return identityHash[pathExpr];
-      }
-
-      function setUserAuthFn(bool) {
-        userAuthenticated = true;
-        return this;
-      }
-
-      function getUserAuthFn() {
-        return userAuthenticated;
       }
 
       function setAuthParamsFn(path, route) {
@@ -134,11 +122,13 @@
     }
   ]);
 
-  app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', function($route, $location, $rootScope, $timeout, $stateHandle, $window) {
+  app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', '$q', function($route, $location, $rootScope, $timeout, $stateHandle, $window, $q) {
     var previousUrl = undefined,
       original = $location.path,
       callbackTimeoutId = null,
-      isNewLoaded = true;
+      isNewLoaded = true,
+      userAuthenticated = undefined,
+      deferred = $q.defer();
 
     $stateHandle.route = {};
 
@@ -224,6 +214,9 @@
 
       $timeout.cancel(callbackTimeoutId);
       callbackTimeoutId = $timeout(function() {
+        if ($stateHandle.route && $stateHandle.route.newUrl.title !== undefined) {
+          document.title = $stateHandle.route.newUrl.title;
+        }
         callSubscribers($stateHandle.route.newUrl);
       }, 100);
     });
@@ -251,6 +244,24 @@
       return original.apply($location, [path]);
     };
 
+    function setUserAuthFn(bool) {
+      userAuthenticated = bool;
+      deferred.resolve(userAuthenticated);
+      return this;
+    }
+
+    function ifUserAuthenticatedFn(callback) {
+      if (userAuthenticated === undefined) {
+        deferred.resolve(false);
+      }
+      deferred.promise.then(function(userAuthenticated) {
+        callback(userAuthenticated);
+        callback = function() {};
+      });
+    }
+
+    $stateHandle.ifUserAuthenticated = ifUserAuthenticatedFn;
+    $stateHandle.setUserAuth = setUserAuthFn;
     $stateHandle.resetRoute = resetRouteFn;
 
     routeHash = $route.routes;

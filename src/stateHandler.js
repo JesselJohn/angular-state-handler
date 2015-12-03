@@ -128,7 +128,6 @@
   app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', '$q', function($route, $location, $rootScope, $timeout, $stateHandle, $window, $q) {
     var previousUrl = undefined,
       searchUrl = undefined,
-      original = $location.path,
       callbackTimeoutId = null,
       isNewLoaded = true,
       userAuthenticated = undefined,
@@ -241,16 +240,23 @@
       $location.search($location.$$state.searchString);
     }
 
-    $stateHandle.path = function(path, reload) {
-      if (reload === false) {
-        var lastRoute = $route.current,
-          un = $rootScope.$on('$locationChangeSuccess', function() {
-            $route.current = lastRoute;
-            un();
-          });
+    function editLocationRouteFunctions(prop) {
+      var original = $location[prop];
+      return function(value, reload) {
+        var ArrayPassedToApply = [];
+        if (reload === false) {
+          var lastRoute = $route.current,
+            un = $rootScope.$on('$locationChangeSuccess', function() {
+              $route.current = lastRoute;
+              un();
+            });
+        }
+        if (value !== undefined) {
+          ArrayPassedToApply.push(value);
+        }
+        return original.apply($location, ArrayPassedToApply);
       }
-      return original.apply($location, [path]);
-    };
+    }
 
     function setUserAuthFn(bool) {
       userAuthenticated = bool;
@@ -271,6 +277,8 @@
     $stateHandle.ifUserAuthenticated = ifUserAuthenticatedFn;
     $stateHandle.setUserAuth = setUserAuthFn;
     $stateHandle.resetRoute = resetRouteFn;
+    $stateHandle.path = editLocationRouteFunctions("path");
+    $stateHandle.search = editLocationRouteFunctions("search");
 
     routeHash = $route.routes;
     // routeHash.getPropertyValue = getPropertyValueFromHistoryStateFn;

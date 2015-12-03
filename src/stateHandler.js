@@ -13,14 +13,29 @@
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
     routeTemplateUrlCollection = [],
-    dummyElem = document.createElement("a"),
-    getRelativePath = function(url) {
-      dummyElem.href = url;
-      return {
-        path: dummyElem.pathname,
-        fullPath: dummyElem.pathname + dummyElem.search
-      };
+    dummyElem = document.createElement("a");
+
+  function getRelativePath(url) {
+    dummyElem.href = url;
+    return {
+      path: dummyElem.pathname,
+      fullPath: dummyElem.pathname + dummyElem.search
     };
+  }
+
+  // function generateSearchStringFromObject(obj) {
+  //   var str = undefined;
+  //   for (var a in obj) {
+  //     if (str === undefined) {
+  //       str = "?";
+  //     } else {
+  //       str += "&";
+  //     }
+  //     str += a + "=" + obj[a];
+  //   }
+
+  //   return str || "";
+  // }
 
   // Factories required to configure this module
   app.provider('$factoriesForStateHandle', ["$provide",
@@ -63,8 +78,7 @@
           subscribe: subscribeFn,
           getSubscribers: getSubscribersFn,
           setAuthParams: setAuthParamsFn,
-          getAuthParams: getAuthParamsFn,
-          pushStateOnStateChange: pushStateOnStateChangeFn
+          getAuthParams: getAuthParamsFn
         };
 
       function subscribeFn(subscriber, pathExpr) {
@@ -99,17 +113,6 @@
         }
       };
 
-      function pushStateOnStateChangeFn(previousUrl) {
-        if (previousUrl !== undefined) {
-          var that = this;
-          if (window.history && window.history.pushState) {
-            window.history.pushState({
-              'path': previousUrl
-            }, "adewgyi");
-          }
-        }
-      }
-
       _constructor.prototype = {
         response: subscriberResponseFn
       }
@@ -124,6 +127,7 @@
 
   app.run(['$route', '$location', '$rootScope', '$timeout', '$stateHandle', '$window', '$q', function($route, $location, $rootScope, $timeout, $stateHandle, $window, $q) {
     var previousUrl = undefined,
+      searchUrl = undefined,
       original = $location.path,
       callbackTimeoutId = null,
       isNewLoaded = true,
@@ -187,12 +191,14 @@
           $stateHandle.path($location.path(), false);
           if (previousUrl !== undefined) {
             $location.state({
-              path: previousUrl
+              path: previousUrl,
+              searchString: searchUrl
             });
           }
         }
       } else {
         previousUrl = $location.path();
+        searchUrl = $location.search();
       }
     });
 
@@ -231,6 +237,8 @@
           }
         }()
       ), false);
+
+      $location.search($location.$$state.searchString);
     }
 
     $stateHandle.path = function(path, reload) {

@@ -102,7 +102,8 @@
 
 <pre><code>
     $stateHandle.setUserAuth(boolean); // To set the state to true or false
-    $stateHandle.getUserAuth();        // To get the authentication state
+    $stateHandle.ifUserAuthenticated(callback); // Callback will receive one parameter with boolean value 
+                                                // indicating users authentication state
 </code></pre>
 
 <h2>

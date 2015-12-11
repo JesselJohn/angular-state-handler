@@ -108,9 +108,11 @@
       function subscriberResponseFn(callback) {
         var that = this;
         that.callBacks.push(callback);
-        if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
-          callback($factoriesForStateHandleProvider.$route.current.params);
-        }
+        $factoriesForStateHandleProvider.$timeout(function() {
+          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
+            callback($factoriesForStateHandleProvider.$route.current.params);
+          }
+        });
       };
 
       _constructor.prototype = {

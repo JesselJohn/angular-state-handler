@@ -164,7 +164,7 @@
     // }
 
     function getPrevUrlIfReloadWhenViewIsSetFn() {
-      var historyState = $location.$$state;
+      var historyState = $location.state();
       if (historyState && ('path' in historyState)) {
         return historyState.path;
       } else {
@@ -229,7 +229,8 @@
     });
 
     function resetRouteFn(callback) {
-      $stateHandle.path(previousUrl || ($location.$$state && $location.$$state.path ||
+      var stateObj = $location.state();
+      $stateHandle.path(previousUrl || (stateObj && stateObj.path ||
         function() {
           for (var _a in routeHash) {
             if (/\/$/.test(a) === true) {
@@ -239,7 +240,7 @@
         }()
       ), false);
 
-      $location.search($location.$$state.searchString);
+      $location.search(searchUrl || (stateObj && stateObj.searchString) || {});
     }
 
     function editLocationRouteFunctions(prop) {

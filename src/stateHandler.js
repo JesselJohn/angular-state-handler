@@ -13,7 +13,8 @@
     randomTemplateUrl = "###" + (Math.random() * 10 / 10) + "###",
     routeHash = {},
     routeTemplateUrlCollection = [],
-    dummyElem = document.createElement("a");
+    dummyElem = document.createElement("a"),
+    newRoute = null;
 
   function getRelativePath(url) {
     dummyElem.href = url;
@@ -109,10 +110,10 @@
         var that = this;
         that.callBacks.push(callback);
         $factoriesForStateHandleProvider.$timeout(function() {
-          if (that.pathExpr == $factoriesForStateHandleProvider.$route.current.originalPath) {
-            callback($factoriesForStateHandleProvider.$route.current.params);
+          if (that.pathExpr == newRoute.originalPath) {
+            callback(newRoute.params);
           }
-        });
+        },100);
       };
 
       _constructor.prototype = {
@@ -133,7 +134,8 @@
       callbackTimeoutId = null,
       isNewLoaded = true,
       userAuthenticated = undefined,
-      deferred = $q.defer();
+      deferred = $q.defer(),
+      notInitCall=false;
 
     $stateHandle.route = {};
 
@@ -179,7 +181,7 @@
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
       var newUrl = newUrl;
       $stateHandle.route.prevUrl = prevUrl;
-      $stateHandle.route.newUrl = newUrl;
+      newRoute = $stateHandle.route.newUrl = newUrl;
       if (newUrl.templateUrl == randomTemplateUrl) {
         if (prevUrl === undefined) {
           var location = $location.path(),
@@ -206,13 +208,16 @@
     $rootScope.$on('$locationChangeStart', function(event, newUrl, prevUrl) {
       var callSubscribers = function(route) {
         var subscribers = $stateHandle.getSubscribers(route.originalPath);
-        for (var a in subscribers) {
-          var subscriberCallbacks = subscribers[a].callBacks;
-          for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
-            subscriberCallbacks[i](route.params);
+        if(notInitCall){
+          for (var a in subscribers) {
+            var subscriberCallbacks = subscribers[a].callBacks;
+            for (var i = 0, len = subscriberCallbacks.length; i < len; i++) {
+              subscriberCallbacks[i](route.params);
+            }
           }
         }
 
+	notInitCall = true;
         if (isNewLoaded && $stateHandle.route.prevUrl !== undefined && route.originalPath !== $stateHandle.route.prevUrl.originalPath) {
           callSubscribers($stateHandle.route.prevUrl);
         }
@@ -224,6 +229,7 @@
         if ($stateHandle.route && $stateHandle.route.newUrl.title !== undefined) {
           document.title = $stateHandle.route.newUrl.title;
         }
+        
         callSubscribers($stateHandle.route.newUrl);
       }, 100);
     });

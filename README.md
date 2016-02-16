@@ -9,10 +9,6 @@ Using bower :
     #install package and add it to bower.json dependencies
     $ bower install angular-state-handler --save
 
-
-    # install package and add it to bower.json devDependencies
-    $ bower install angular-state-handler --save-dev
-
 ## Initial Route Configuration
 
     $stateHandleProvider

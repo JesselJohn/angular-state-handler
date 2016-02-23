@@ -177,10 +177,12 @@
     }
 
     $rootScope.$on('$routeChangeStart', function(event, newUrl, prevUrl) {
-      var newUrl = newUrl;
+      var newUrl = newUrl,
+        isRandom = (newUrl.templateUrl == randomTemplateUrl);
       $stateHandle.route.prevUrl = prevUrl;
       $stateHandle.route.newUrl = newUrl;
-      if (newUrl.templateUrl == randomTemplateUrl) {
+
+      if (isRandom) {
         if (prevUrl === undefined) {
           var location = $location.path(),
             pathToSet = getPrevUrlIfReloadWhenViewIsSetFn();

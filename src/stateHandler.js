@@ -281,7 +281,9 @@
 
     $stateHandle.ifUserAuthenticated = ifUserAuthenticatedFn;
     $stateHandle.setUserAuth = setUserAuthFn;
-    $stateHandle.resetRoute = resetRouteFn;
+    $stateHandle.resetRoute = function(){
+      $timeout(resetRouteFn);
+    };
     $stateHandle.path = editLocationRouteFunctions("path");
     $stateHandle.search = editLocationRouteFunctions("search");
 

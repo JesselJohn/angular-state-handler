@@ -1,6 +1,6 @@
 {
   "name": "angular-state-handler",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "dependencies": {
     "angular": "^1.3.0",
     "angular-route": "^1.3.0"

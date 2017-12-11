@@ -1,3 +1,5 @@
+## This Project is nolonger maintained
+
 # ANGULAR STATE HANDLER
 
 Control view with routes and providing extra functionalities for easy route management.
